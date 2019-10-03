@@ -1,22 +1,43 @@
-#include "q.h"
+
+#include "threads.h"
+
+TCB_t *head;
+
+void f1(){
+    while(1){
+         //printf("Printing F1\n");
+         //display(head);
+         printf("Yielding in f1\n");
+         yield();
+    }
+}
+
+void f2(){
+    while(1){
+         //printf("Printing F2\n");
+         //display(head);
+         printf("Yielding in f2\n");
+         yield();
+    }
+}
+
+void f3(){
+    while(1){
+         //printf("Printing F3\n");
+         //display(head);
+         printf("Yielding in f3\n");
+         yield();
+    }
+}
 
 
-q_element *head;
 
 int main(){
-    printf("Starting the main\n");
-    q_element *item;
-    printf("Creating new item 1\n");
-    item = NewItem();
-    printf("Creating new queue\n");
-    head = newQueue();
-    printf("Adding new item 1 to queue\n");
-    AddQueue(head, item, 1);
-    printf("Creating new item 2\n");
-    item = NewItem();
-    printf("Adding new item 2 to queue\n");
-    AddQueue(head, item, 2);
-    printf("Start printing\n");
-    display(head);
+    
+    ReadyQ = &head;
+    start_thread(f1);
+    start_thread(f2);
+    start_thread(f3);
+    run();
     return 0;
 }
