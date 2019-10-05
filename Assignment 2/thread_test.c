@@ -36,6 +36,7 @@ void f3(){
 int main(){
     
     ReadyQ = &head;
+    head = newQueue();
     start_thread(f1);
     start_thread(f2);
     start_thread(f3);
