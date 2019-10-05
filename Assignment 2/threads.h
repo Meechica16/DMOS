@@ -6,7 +6,7 @@ void yield();
 
 TCB_t **ReadyQ;
 TCB_t *Curr_Thread;
-int counter = 0;
+int counter = 0; // counter for thread_id
 
 void start_thread(void (*function)(void)){
     void *stackP;

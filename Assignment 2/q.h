@@ -70,7 +70,6 @@ void AddQueue(TCB_t **head, TCB_t *item){
     }
     //printf("Payload value:%d\n",temp->payload);
     else{// when we have to add to the tail
-        //printf("AM I even creating list");
         last_node = (*head)->prev;  //storing address of tail in last_node
         (*head)->prev = item;       //pointing prev of head node to the item node 
         last_node->next = item;       //pointing prev of tail node to the item node
@@ -106,12 +105,9 @@ TCB_t *DelQueue(TCB_t **head){
 }
 
 void display(TCB_t *head){
-    //printf("OK! I am inside display\n");
-    //printf("Payload value:%d\n",head->payload);
     TCB_t *temp;
     temp = head;
     do{
-        //printf("OK! I am inside display");
         printf("Payload value:%d\n",temp->thread_id);
         temp = temp->next;
     }while(temp != head);
