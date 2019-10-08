@@ -35,7 +35,7 @@ void run(){
     swapcontext(&parent, &(Curr_Thread->context)); // swap context from parent to start the first thread
 }
 
-// function yields from curent TCB causing next TCB to run
+// function yields from curent TCB causing next TCB in the queue to run
 void yield(){
     TCB_t *Prev_Thread;
     AddQueue(ReadyQ, Curr_Thread);  // Adds the current thread to the readyQ
