@@ -53,9 +53,9 @@ void f3(){
 
 
 int main(){
+    head = newQueue();  // Creating a queue which returns address of head pointer
     ReadyQ = &head;     // ReadyQ stores the address of the head pointer
     s = CreateSem(1);   // mutex semaphore
-    head = newQueue();  // Creating a queue which returns address of head pointer
     start_thread(f1);   // Thread 1 with callback function f1
     start_thread(f2);   // Thread 2 with callback function f2
     start_thread(f3);   // Thread 3 with callback functino f3
