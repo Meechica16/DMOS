@@ -1,5 +1,5 @@
 /*
-CSE 531: DMOS Project 2
+CSE 531: DMOS Project 3
 Team Members:  Meenal Khandelwal  [ 1215375473 ] 
                Spurthi Sunil Madhure  [ 1215376084 ]
 Description:

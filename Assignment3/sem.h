@@ -3,6 +3,7 @@
 
 #include "threads.h"
 
+// Semaphore structure which has a Semaphore Queue with a head pointer and a count
 typedef struct Semaphore_t{
      TCB_t **SemQ;
      TCB_t *s_head;
@@ -18,12 +19,12 @@ void block_tcb(Semaphore_t *sem){
     swapcontext(&(Prev_Thread->context), &(Curr_Thread->context));//swap the context from Prev_Thread to the thread pointed to Curr_Thread    
 }
 
-// Unblocks a thread by deleting it from the semaphore queue and adding it to the ReadyQ
+// Unblocks a thread by deleting it from the semaphore queue and adds it to the ReadyQ
 void unblock_tcb(Semaphore_t *sem){
     AddQueue(ReadyQ, DelQueue(sem->SemQ));
 }
 
-// Creates a new semaphore queue and inititalizes the count value of the semaphore and mallocs a s
+// Allocates memory for a semaphore structure, creates a new semaphore queue and inititalizes the count value of the semaphore
 Semaphore_t* CreateSem(int InputValue)
 {   
     Semaphore_t *sem_st;
@@ -36,7 +37,6 @@ Semaphore_t* CreateSem(int InputValue)
     return sem_st;
 }
 
-
 /*
  * The P routine decrements the semaphore, and if the value is less than
  * zero then blocks the process 
@@ -47,7 +47,6 @@ void P(Semaphore_t *sem)
     if(sem->count < 0)
         block_tcb(sem);  
 }
-
 
 /*
  * The V routine increments the semaphore, and if the value is 0 or

@@ -1,5 +1,9 @@
-// (c) Partha Dasgupta 2009
-// permission to use and distribute granted.
+/*
+CSE 531: DMOS Project 3
+Team Members:  Meenal Khandelwal  [ 1215375473 ] 
+               Spurthi Sunil Madhure  [ 1215376084 ]
+Description: Reader Writer with our implementation of semaphore
+*/
 
 #define _GNU_SOURCE
 #include <unistd.h>
@@ -106,10 +110,6 @@ void writer(void)
 	writer_exit(ID);
   };
 }
-
-
-
-//-------------------------------------------------------
 
 int main()
 {
