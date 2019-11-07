@@ -69,7 +69,7 @@ void AddQueue(TCB_t **head_ptr, TCB_t *item){
 TCB_t *DelQueue(TCB_t **head_ptr){  
     TCB_t *last_node, *temp;
     temp = NULL;
-    if(*head_ptr == NULL){
+    if((*head_ptr) == NULL){
         printf("Error: Queue is empty, cannot delete any element\n");
         exit(2);  // Flags an error
     }
