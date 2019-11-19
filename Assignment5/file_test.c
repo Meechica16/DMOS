@@ -127,40 +127,79 @@ void server(){
     
     int data[10]; 
     int result[10];
-    int rport_arr[3] = {-1,-1,-1}; // Only serve three client at a time
+    struct rport_info{
+        int rport;  
+        char client_fname[22];  // 22 so that we can add .server at the end of filename we get from client 
+    };
+    struct rport_info rport_arr[3];
+
+    char append[] = ".server";
+
+    int struct_idx = -1;
+    
+    for(int i=0; i < 3; i++){
+        rport_arr[i].rport = -1;    
+    } 
+
+    //int rport_arr[3] = {-1,-1,-1}; // Only serve three client at a time
+
     rcv(99, data);
+    int rport; //rport of a client we are working on
     //Semaphore_t *count_mutex;  // One port update rport_arr
 
-    char *p = (char*)data;
+    char *p = (char*)data;  
     int count;//Nymber of client used
-    printf("Name: \n");
-    for(int i=0; i<40; i++){
-        printf("Addr %p, %c\n",p,*p++);
-    }
+    // printf("Name: \n");
+    // for(int i=0; i<40; i++){
+    //     printf("Addr %p, %c\n",p,*p++);
+    // }
 
     switch(data[1]){
         case 0:
-            if (data[2] <= 1048576)
+            if (data[2] <= 1048576)  // If size <1MB
             {
-                if (count < 3)
+                if (count < 3)  // If number of concurrent clients < 3
                 {
-                    for(int i = 0; i < 3; i++){
-                        if(rport_arr[i] == -1){
-                            rport_arr[i] = data[0];
+                    for(int i = 0; i < 3; i++)
+                    {
+                        if(rport_arr[i].rport == -1){  // Meaning that particular position is empty
+                            rport_arr[i].rport = data[0];  // get the rport from data and store it
+                            struct_idx = i;
                             count++;
                             break;
+                        }
                     }
-                    // Got the position now 
+                    // Got the position now, now we have to store the filename
+
+                    char *c = (char*)(data+3);  // start reading from 1st char stored in client at 3rd integer
+                    char *name_info = rport_arr[struct_idx].client_fname;
+                    while(*c != '\0'){
+                        *(name_info++) = *c++;
+                    }
+                    printf("File name stored in struct = %s\n",rport_arr[struct_idx].client_fname);
+                    printf("Filename length %d\n",strlen(rport_arr[struct_idx].client_fname));
+
+                    // Done storing filename in rport_arr 
+                    // Now create a file named filename.server
+                    strncat(rport_arr[struct_idx].client_fname, append, 7);
+                    FILE *server_file = fopen(rport_arr[struct_idx].client_fname, "w"); 
                     
+                    // For Debug - To check whether we can actually write to the file we just created
+                    // printf("\nWriting to file\n");
+                    // char str_add[] = "hello server file";
+                    // printf("Size of str_add = %d\n",sizeof(str_add));
+                    // fprintf(server_file, "%s", str_add);
+                    // fprintf(server_file, "%s", str_add);
+                    // fclose(server_file);
                 }
-                else{
+                else{  // number of clients exceeds 3
                     rport = data[0];
                     result[1] = -2;
                     send(rport, result);
                 }
 
             }
-            else{
+            else{  // size > 1MB
                 rport = data[0];
                 result[1] = -1;
                 send(rport, result);
@@ -190,8 +229,14 @@ void server(){
 
 int main(int argc, char* argv[]){
     int len;
+    
+    //TO DO - If argc<3 then print error
     int num_client = atoi(argv[1]);
+
+
+
     //fname = (char*)malloc((COL+1)*num_client*sizeof(char));
+    
     printf("%s\n", argv[2]);
     for(int i = 2; i < argc; i++){
         len = strlen(argv[i]);
