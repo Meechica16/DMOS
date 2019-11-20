@@ -33,6 +33,7 @@ void client(){
     int result[10];
     int name_len;
     int name_integers;
+    char *ch;
 
     P(cs_mutex);
     int rport = port_num++;
@@ -73,10 +74,10 @@ void client(){
 
     char *p = (char*)data;
 
-    printf("Name: \n");
-    for(int i=0; i<40; i++){
-        printf("Addr %p, %c\n",p,*p++);
-    }
+    // printf("Name: \n");
+    // for(int i=0; i<40; i++){
+    //     printf("Addr %p, %c\n",p,*p++);
+    // }
     send(99, data);    
     rcv(rport, result);
     if(result[1] == -1){
@@ -93,14 +94,14 @@ void client(){
         char *buffer = (char *)calloc(num_bytes+remainder,sizeof(char));
         fread(buffer, sizeof(char), num_bytes, fptr);
         printf("Buffer data: \n%s",buffer);
-        
+        ch = buffer;
         while(!end_flag){
             //memset the data
             memset((data+2), '\0', 32); 
             for(int i=0; i<8; i++){
                data[2+i] = *(unsigned int*)(buffer);
                if(data[2+i] == 0){
-                   printf("Got the mistake");
+                   printf("End of File\n");
                    end_flag = 1;
                    break;
                }
@@ -149,6 +150,7 @@ void client(){
     sleep(1);
     yield();
     }*/
+    free(ch);
     while(1)
         yield();
    
@@ -202,6 +204,10 @@ void server(){
                                 rport_arr[i].rport = data[0];  // get the rport from data and store it
                                 struct_idx = i;
                                 count++;
+                                if(count == 3){
+                                    printf("For count value 3\n");
+                                    // exit(1);
+                                }
                                 break;
                             }
                         }
@@ -212,8 +218,9 @@ void server(){
                         while(*c != '\0'){
                             *(name_info++) = *c++;
                         }
-                        printf("File name stored in struct = %s\n",rport_arr[struct_idx].client_fname);
-                        printf("Filename length %lu\n",strlen(rport_arr[struct_idx].client_fname));
+                        printf("CASE 0: struct_idx %d\t",struct_idx);
+                        printf("File name stored in struct = %s\t",rport_arr[struct_idx].client_fname);
+                        printf("count value:%d\n", count);
 
                         // Done storing filename in rport_arr 
                         // Now create a file named filename.server
@@ -264,12 +271,12 @@ void server(){
                 
                 printf("Data we write to server file: \n%s\n",c);
                 fprintf(server_file, "%s", c);  // copy the file data to the file created by server
-
                 fclose(server_file);
+
                 if(*(c + 28) == '\0'){  //Entire file transfer is complete
                     //put rport as -1 and decrement count
-                    printf("Struct Index:%d, count:%d \n", struct_idx, count);
-                    
+                    printf("File %s  Struct Index:%d, count:%d \n", rport_arr[struct_idx].client_fname, struct_idx, count);
+                     
                     rport_arr[struct_idx].rport = -1;
                     count--;
                     
@@ -345,8 +352,9 @@ int main(int argc, char* argv[]){
     init_port();
     start_thread(server);
     start_thread(client);
-    //start_thread(client);
-    //start_thread(client);
+    start_thread(client);
+    start_thread(client);
+    start_thread(client);
     run();
     return 0;
        
