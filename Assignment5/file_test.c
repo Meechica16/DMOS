@@ -1,9 +1,9 @@
 /*
-CSE 531: DMOS Project 4
+CSE 531: DMOS Project 5
 Team Members:  Meenal Khandelwal  [ 1215375473 ] 
                Spurthi Sunil Madhure  [ 1215376084 ]
 	
-compile instructions: gcc msgs_test.c
+compile instructions: gcc file_test.c
 */
 #include "msgs.h"
 #define TOTAL_PORT 100 
@@ -12,13 +12,11 @@ compile instructions: gcc msgs_test.c
 #include<string.h>
 #define COL 15
 
-Semaphore_t *cs_mutex;
-
 int port_num = 0;
 
 char fname[99][15];
 
-
+Semaphore_t *cs_mutex;
 int cl_id;
 
 TCB_t *head;
@@ -60,24 +58,20 @@ void client(){
     data[2] = num_bytes;
     
     name_len = strlen(str);
-    printf("Filename: %s\n",str);
+    //printf("Filename: %s\n",str);
     name_len ++;
-    printf("name length = %d\n",name_len);    
+    //printf("name length = %d\n",name_len);    
     name_integers = (name_len % 4 ==0)? (name_len/4):((name_len/4) +1); // Calculates the number of integers required to store the filename
-    printf("Num of integers for filename %d\n",name_integers);
+    //printf("Num of integers for filename %d\n",name_integers);
 
     // put name into data
     for(int i=0; i<name_integers; i++){
         data[3+i] = *(unsigned int*)(str+(4*i));
-        printf("Data %d\n",data[3+i]);
+        //printf("Data %d\n",data[3+i]);
     }
 
     char *p = (char*)data;
 
-    // printf("Name: \n");
-    // for(int i=0; i<40; i++){
-    //     printf("Addr %p, %c\n",p,*p++);
-    // }
     send(99, data);    
     rcv(rport, result);
     if(result[1] == -1){
@@ -87,13 +81,13 @@ void client(){
         printf("do not do that\n");
     }
     else if(result[1] == 1){
-        printf("Server has received name\n");
+        printf("Client started sending data to server\n");
         data[0] = rport ; //0th element will have the reply port 
         data[1] = 1;
         int remainder = num_bytes%4;
         char *buffer = (char *)calloc(num_bytes+remainder,sizeof(char));
         fread(buffer, sizeof(char), num_bytes, fptr);
-        printf("Buffer data: \n%s",buffer);
+        //printf("Buffer data: \n%s",buffer);
         ch = buffer;
         while(!end_flag){
             //memset the data
@@ -105,59 +99,19 @@ void client(){
                    end_flag = 1;
                    break;
                }
-               printf("Data %d\n",data[2+i]);
+               //printf("Data %d\n",data[2+i]);
                buffer = buffer + 4;
                }
-               //buffer = buffer + 4;
             send(99, data);
             yield();
             }
             
         }
 
-        // for(int i=0; i<8; i++){
-        //     do{
-        //        data[2+i] = *(unsigned int*)(buffer);
-        //        printf("Data %d\n",data[2+i]);
-        //        buffer = buffer + 4;
-        //        send(99, data);
-        //        yield();
-        //     }while(*buffer != '\0' );
-        // }
 
-        //rcv()
-        //Send the file
-    
-
-
-    /*for(int i = 1; i < 10; i++)  // Data giving to each client is it's id number
-        data[i] = id; 
-    while(1){
-            printf("\nData Sent to Server from Client %d:",id);
-            for(int i = 1; i < 10; i++){
-		    printf("\nData[%d] = %d \t", i, data[i]);
-            }
-            printf("\n");
-	    send(99, data);
-	    rcv(rport, result);
-            printf("\nResult Received from Server for Client %d:\n",id);
-     
-	    for(int i = 1; i < 10; i++){
-		    printf("\nResult[%d] = %d \t", i, result[i]);
-            
-             } 
-             printf("\n"); 
-    sleep(1);
-    yield();
-    }*/
     free(ch);
     while(1)
         yield();
-   
-    // while(1){
-    //   //   printf("client while\t");
-    //     yield();
-    // }
     
 }
 
@@ -179,11 +133,9 @@ void server(){
         rport_arr[i].rport = -1;    
     } 
 
-    //int rport_arr[3] = {-1,-1,-1}; // Only serve three client at a time
     while(1){
         rcv(99, data);
         int rport = 0; //rport of a client we are working on
-        //Semaphore_t *count_mutex;  // One port update rport_arr
 
         char *p = (char*)data;  
         int count;//Nymber of client used
@@ -204,10 +156,6 @@ void server(){
                                 rport_arr[i].rport = data[0];  // get the rport from data and store it
                                 struct_idx = i;
                                 count++;
-                                if(count == 3){
-                                    printf("For count value 3\n");
-                                    // exit(1);
-                                }
                                 break;
                             }
                         }
@@ -218,9 +166,9 @@ void server(){
                         while(*c != '\0'){
                             *(name_info++) = *c++;
                         }
-                        printf("CASE 0: struct_idx %d\t",struct_idx);
-                        printf("File name stored in struct = %s\t",rport_arr[struct_idx].client_fname);
-                        printf("count value:%d\n", count);
+                        //printf("CASE 0: struct_idx %d\t",struct_idx);
+                        //printf("File name stored in struct = %s\t",rport_arr[struct_idx].client_fname);
+                        //printf("count value:%d\n", count);
 
                         // Done storing filename in rport_arr 
                         // Now create a file named filename.server
@@ -255,7 +203,7 @@ void server(){
 
             case 1:
                 // Traverse the array of structs to get struct_idx
-                printf("In case 1\n");
+                printf("Server getting the data from the port \n");
                 
                 for(int i = 0; i < 3; i++)
                 {
@@ -269,13 +217,13 @@ void server(){
 
                 char *c = (char*)(data + 2);  // pointer to the file_data we have received from client
                 
-                printf("Data we write to server file: \n%s\n",c);
+                //printf("Data we write to server file: \n%s\n",c);
                 fprintf(server_file, "%s", c);  // copy the file data to the file created by server
                 fclose(server_file);
 
                 if(*(c + 28) == '\0'){  //Entire file transfer is complete
                     //put rport as -1 and decrement count
-                    printf("File %s  Struct Index:%d, count:%d \n", rport_arr[struct_idx].client_fname, struct_idx, count);
+                    //printf("File %s  Struct Index:%d, count:%d \n", rport_arr[struct_idx].client_fname, struct_idx, count);
                      
                     rport_arr[struct_idx].rport = -1;
                     count--;
@@ -290,25 +238,6 @@ void server(){
 
         yield();
     }
-
-    printf("Number of bytes:%d \n",data[2]);
-    // Convert the data to string
- 
-    //while(1){
-      //   printf("client while\t");
-      //  yield();
-    //}
-    /*while(1){
-        //printf("while loop\n");
-        rcv(99, data);
-        if((data[0] == rport[0]) || (data[0] == rport[0]))
-        //rport[] = data[0];
-        for(int i = 1; i < 10; i++){ // In Server inreasing each element by 1
-           // printf("\nSER Data: %d \t", data[i]);
-            result[i] = data[i] + 1;
-        }
-        send(rport, result);
-    }*/
     
 }
 
@@ -334,13 +263,6 @@ int main(int argc, char* argv[]){
         //printf("%s\t", (fname[i-2]));
         fname[i][14] = '\0';
     }
-    //printf("Hey\n");
-    //str = fname + 1;
-    //printf("%s\t",(fname));
-    
-    //for(int i = 0; fname[0][i] != '\0'; i++)
-    //    printf("%c, %d\t",fname[0][i], i);
-    //exit(1);
     
     head = newQueue();
     ReadyQ = &head;
@@ -351,10 +273,11 @@ int main(int argc, char* argv[]){
     cs_mutex = CreateSem(1);  // to keep the track of number of clients
     init_port();
     start_thread(server);
-    start_thread(client);
-    start_thread(client);
-    start_thread(client);
-    start_thread(client);
+    for(int i = 0; i < num_client; i++)
+        start_thread(client);
+    //start_thread(client);
+    //start_thread(client);
+    //start_thread(client);
     run();
     return 0;
        
