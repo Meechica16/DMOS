@@ -24,6 +24,7 @@ int cl_id;
 TCB_t *head;
 
 void client(){
+    int end_flag = 0;
     FILE *fptr;
     char *str;
     int id = cl_id++;
@@ -52,10 +53,6 @@ void client(){
 
     fseek(fptr,0L, SEEK_SET);
 
-
-
-
-
     // Sending the name
     data[0] = rport ; //0th element will have the reply port 
     data[1] = 0; //1st element tells name/data. if 0 then name.
@@ -82,16 +79,54 @@ void client(){
     }
     send(99, data);    
     rcv(rport, result);
-    if(result[1] == -1)
-    {
+    if(result[1] == -1){
         printf("Size greater then 1MB \n");
     }
     else if(result[1] == -2){
         printf("do not do that\n");
     }
-    else{
+    else if(result[1] == 1){
+        printf("Server has received name\n");
+        data[0] = rport ; //0th element will have the reply port 
+        data[1] = 1;
+        int remainder = num_bytes%4;
+        char *buffer = (char *)calloc(num_bytes+remainder,sizeof(char));
+        fread(buffer, sizeof(char), num_bytes, fptr);
+        printf("Buffer data: \n%s",buffer);
+        
+        while(!end_flag){
+            //memset the data
+            memset((data+2), '\0', 32); 
+            for(int i=0; i<8; i++){
+               data[2+i] = *(unsigned int*)(buffer);
+               if(data[2+i] == 0){
+                   printf("Got the mistake");
+                   end_flag = 1;
+                   break;
+               }
+               printf("Data %d\n",data[2+i]);
+               buffer = buffer + 4;
+               }
+               //buffer = buffer + 4;
+            send(99, data);
+            yield();
+            }
+            
+        }
+
+        // for(int i=0; i<8; i++){
+        //     do{
+        //        data[2+i] = *(unsigned int*)(buffer);
+        //        printf("Data %d\n",data[2+i]);
+        //        buffer = buffer + 4;
+        //        send(99, data);
+        //        yield();
+        //     }while(*buffer != '\0' );
+        // }
+
+        //rcv()
         //Send the file
-    }
+    
 
 
     /*for(int i = 1; i < 10; i++)  // Data giving to each client is it's id number
@@ -114,12 +149,13 @@ void client(){
     sleep(1);
     yield();
     }*/
-    yield();
-   
-    while(1){
-      //   printf("client while\t");
+    while(1)
         yield();
-    }
+   
+    // while(1){
+    //   //   printf("client while\t");
+    //     yield();
+    // }
     
 }
 
@@ -142,77 +178,119 @@ void server(){
     } 
 
     //int rport_arr[3] = {-1,-1,-1}; // Only serve three client at a time
+    while(1){
+        rcv(99, data);
+        int rport = 0; //rport of a client we are working on
+        //Semaphore_t *count_mutex;  // One port update rport_arr
 
-    rcv(99, data);
-    int rport; //rport of a client we are working on
-    //Semaphore_t *count_mutex;  // One port update rport_arr
+        char *p = (char*)data;  
+        int count;//Nymber of client used
+        // printf("Name: \n");
+        // for(int i=0; i<40; i++){
+        //     printf("Addr %p, %c\n",p,*p++);
+        // }
 
-    char *p = (char*)data;  
-    int count;//Nymber of client used
-    // printf("Name: \n");
-    // for(int i=0; i<40; i++){
-    //     printf("Addr %p, %c\n",p,*p++);
-    // }
-
-    switch(data[1]){
-        case 0:
-            if (data[2] <= 1048576)  // If size <1MB
-            {
-                if (count < 3)  // If number of concurrent clients < 3
+        switch(data[1]){
+            case 0:
+                if (data[2] <= 1048576)  // If size <1MB
                 {
-                    for(int i = 0; i < 3; i++)
+                    if (count < 3)  // If number of concurrent clients < 3
                     {
-                        if(rport_arr[i].rport == -1){  // Meaning that particular position is empty
-                            rport_arr[i].rport = data[0];  // get the rport from data and store it
-                            struct_idx = i;
-                            count++;
-                            break;
+                        for(int i = 0; i < 3; i++)
+                        {
+                            if(rport_arr[i].rport == -1){  // Meaning that particular position is empty
+                                rport_arr[i].rport = data[0];  // get the rport from data and store it
+                                struct_idx = i;
+                                count++;
+                                break;
+                            }
                         }
-                    }
-                    // Got the position now, now we have to store the filename
+                        // Got the position now, now we have to store the filename
 
-                    char *c = (char*)(data+3);  // start reading from 1st char stored in client at 3rd integer
-                    char *name_info = rport_arr[struct_idx].client_fname;
-                    while(*c != '\0'){
-                        *(name_info++) = *c++;
-                    }
-                    printf("File name stored in struct = %s\n",rport_arr[struct_idx].client_fname);
-                    printf("Filename length %d\n",strlen(rport_arr[struct_idx].client_fname));
+                        char *c = (char*)(data+3);  // start reading from 1st char stored in client at 3rd integer
+                        char *name_info = rport_arr[struct_idx].client_fname;
+                        while(*c != '\0'){
+                            *(name_info++) = *c++;
+                        }
+                        printf("File name stored in struct = %s\n",rport_arr[struct_idx].client_fname);
+                        printf("Filename length %lu\n",strlen(rport_arr[struct_idx].client_fname));
 
-                    // Done storing filename in rport_arr 
-                    // Now create a file named filename.server
-                    strncat(rport_arr[struct_idx].client_fname, append, 7);
-                    FILE *server_file = fopen(rport_arr[struct_idx].client_fname, "w"); 
-                    
-                    // For Debug - To check whether we can actually write to the file we just created
-                    // printf("\nWriting to file\n");
-                    // char str_add[] = "hello server file";
-                    // printf("Size of str_add = %d\n",sizeof(str_add));
-                    // fprintf(server_file, "%s", str_add);
-                    // fprintf(server_file, "%s", str_add);
-                    // fclose(server_file);
+                        // Done storing filename in rport_arr 
+                        // Now create a file named filename.server
+                        strncat(rport_arr[struct_idx].client_fname, append, 7);
+                        FILE *server_file = fopen(rport_arr[struct_idx].client_fname, "w");
+                        fclose(server_file);  // close the file after creating
+
+                        // For Debug - To check whether we can actually write to the file we just created
+                        // printf("\nWriting to file\n");
+                        // char str_add[] = "hello server file";
+                        // printf("Size of str_add = %d\n",sizeof(str_add));
+                        // fprintf(server_file, "%s", str_add);
+                        // fprintf(server_file, "%s", str_add);
+                        // fclose(server_file);
+                        rport = rport_arr[struct_idx].rport;
+                        result[1] = 1;
+                        send(rport, result); // FIle is ready
+                    }
+                    else{  // number of clients exceeds 3
+                        rport = data[0];
+                        result[1] = -2;
+                        send(rport, result);
+                    }
+
                 }
-                else{  // number of clients exceeds 3
+                else{  // size > 1MB
                     rport = data[0];
-                    result[1] = -2;
+                    result[1] = -1;
                     send(rport, result);
                 }
+                break;
 
-            }
-            else{  // size > 1MB
-                rport = data[0];
-                result[1] = -1;
-                send(rport, result);
-            }
+            case 1:
+                // Traverse the array of structs to get struct_idx
+                printf("In case 1\n");
+                
+                for(int i = 0; i < 3; i++)
+                {
+                    if(rport_arr[i].rport == data[0]){  // Meaning server is working on that particular client
+                        struct_idx = i; 
+                        break;
+                    }
+                }
+
+                FILE *server_file = fopen(rport_arr[struct_idx].client_fname, "a");
+
+                char *c = (char*)(data + 2);  // pointer to the file_data we have received from client
+                
+                printf("Data we write to server file: \n%s\n",c);
+                fprintf(server_file, "%s", c);  // copy the file data to the file created by server
+
+                fclose(server_file);
+                if(*(c + 28) == '\0'){  //Entire file transfer is complete
+                    //put rport as -1 and decrement count
+                    printf("Struct Index:%d, count:%d \n", struct_idx, count);
+                    
+                    rport_arr[struct_idx].rport = -1;
+                    count--;
+                    
+                    memset(rport_arr[struct_idx].client_fname, 0, 22); 
+                    printf("Closing the file\n");
+                    // fclose(server_file);
+                    //exit(0);
+                }
+                break;
+        }
+
+        yield();
     }
 
     printf("Number of bytes:%d \n",data[2]);
     // Convert the data to string
  
-    while(1){
+    //while(1){
       //   printf("client while\t");
-        yield();
-    }
+      //  yield();
+    //}
     /*while(1){
         //printf("while loop\n");
         rcv(99, data);
