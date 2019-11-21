@@ -10,11 +10,11 @@ compile instructions: gcc file_test.c
 #include<unistd.h>
 #include<stdlib.h>
 #include<string.h>
-#define COL 15
+
 
 int port_num = 0;
 
-char fname[99][15];
+char fname[99][20];
 
 Semaphore_t *cs_mutex;
 int cl_id;
@@ -70,18 +70,21 @@ void client(){
         //printf("Data %d\n",data[3+i]);
     }
 
-    char *p = (char*)data;
+    //char *p = (char*)data;
 
     send(99, data);    
     rcv(rport, result);
     if(result[1] == -1){
-        printf("Size greater then 1MB \n");
+        printf("%s: Size greater then 1MB \n",str);
     }
     else if(result[1] == -2){
-        printf("do not do that\n");
+        printf("%s: do not do that\n",str);
+    }
+    else if(result[1] == -3){
+        printf("%s: FIlename is greater rejected by server\n",str);
     }
     else if(result[1] == 1){
-        printf("Client started sending data to server\n");
+        printf("%s: Client started sending data to server\n", str);
         data[0] = rport ; //0th element will have the reply port 
         data[1] = 1;
         int remainder = num_bytes%4;
@@ -95,7 +98,7 @@ void client(){
             for(int i=0; i<8; i++){
                data[2+i] = *(unsigned int*)(buffer);
                if(data[2+i] == 0){
-                   printf("End of File\n");
+                   printf("%s: End of File\n", str);
                    end_flag = 1;
                    break;
                }
@@ -146,7 +149,7 @@ void server(){
 
         switch(data[1]){
             case 0:
-                if (data[2] <= 1048576)  // If size <1MB
+                if (data[2] <= 1048576 && p[27] == '\0')  // If size <1MB
                 {
                     if (count < 3)  // If number of concurrent clients < 3
                     {
@@ -163,6 +166,12 @@ void server(){
 
                         char *c = (char*)(data+3);  // start reading from 1st char stored in client at 3rd integer
                         char *name_info = rport_arr[struct_idx].client_fname;
+                        //if(c[15] != '\0'){
+                            //printf("Filename is greater then 15 char\n");
+                            //result[1] = -3;
+                            //send(rport, result); // FIle is ready
+                            //break;
+                        //}
                         while(*c != '\0'){
                             *(name_info++) = *c++;
                         }
@@ -196,7 +205,10 @@ void server(){
                 }
                 else{  // size > 1MB
                     rport = data[0];
-                    result[1] = -1;
+                    if(p[27] != '\0')
+                        result[1] = -3;
+                    else
+                        result[1] = -1;
                     send(rport, result);
                 }
                 break;
@@ -227,9 +239,9 @@ void server(){
                      
                     rport_arr[struct_idx].rport = -1;
                     count--;
-                    
+                    printf("%s: Transfer is complete\n",rport_arr[struct_idx].client_fname) ;
                     memset(rport_arr[struct_idx].client_fname, 0, 22); 
-                    printf("Closing the file\n");
+                    
                     // fclose(server_file);
                     //exit(0);
                 }
@@ -246,28 +258,23 @@ int main(int argc, char* argv[]){
     
     //TO DO - If argc<3 then print error
     int num_client = atoi(argv[1]);
-
-
-
-    //fname = (char*)malloc((COL+1)*num_client*sizeof(char));
     
     printf("%s\n", argv[2]);
     for(int i = 2; i < argc; i++){
         len = strlen(argv[i]);
-        if(len > 15)
-            len = 15;
+        //if(len > 16)
+            //len = 16;
         printf("filename%s\n", argv[i]);
         //printf("%d\n", i);
 
         strncpy(fname[i-2], argv[i], len);
         //printf("%s\t", (fname[i-2]));
-        fname[i][14] = '\0';
+        if(len <= 15)
+           fname[i][15] = '\0'; //16th element
     }
     
     head = newQueue();
     ReadyQ = &head;
-
-    printf("head %p\n",head);
     
     // This program has 1 Server 3 Clients
     cs_mutex = CreateSem(1);  // to keep the track of number of clients
@@ -275,9 +282,6 @@ int main(int argc, char* argv[]){
     start_thread(server);
     for(int i = 0; i < num_client; i++)
         start_thread(client);
-    //start_thread(client);
-    //start_thread(client);
-    //start_thread(client);
     run();
     return 0;
        
